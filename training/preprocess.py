@@ -1,35 +1,57 @@
-import librosa
-import numpy as np
 import os
+import numpy as np
+import librosa
 
-EMOTIONS = {
-    "01": "neutral",
-    "02": "calm",
-    "03": "happy",
-    "04": "sad",
-    "05": "angry",
-    "06": "fearful",
-    "07": "disgust",
-    "08": "surprised"
-}
-
+# 🎧 FIXED SHAPE: (40, 130)
 def extract_mfcc(file_path):
-    audio, sr = librosa.load(file_path, duration=3)
-    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=40)
-    return np.mean(mfcc.T, axis=0)
+    y, sr = librosa.load(file_path, sr=22050, duration=3)
+
+    mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
+
+    # padding / truncation
+    if mfcc.shape[1] < 130:
+        pad_width = 130 - mfcc.shape[1]
+        mfcc = np.pad(mfcc, pad_width=((0, 0), (0, pad_width)))
+    else:
+        mfcc = mfcc[:, :130]
+
+    return mfcc
+
 
 def load_data(dataset_path):
-    X, y = [], []
+    X = []
+    y = []
+
+    emotion_map = {
+        "01": "neutral",
+        "02": "calm",
+        "03": "happy",
+        "04": "sad",
+        "05": "angry",
+        "06": "fear",
+        "07": "disgust",
+        "08": "surprised"
+    }
 
     for root, _, files in os.walk(dataset_path):
         for file in files:
             if file.endswith(".wav"):
-                emotion_code = file.split("-")[2]
-                emotion = EMOTIONS.get(emotion_code)
 
-                if emotion:
-                    path = os.path.join(root, file)
-                    X.append(extract_mfcc(path))
-                    y.append(emotion)
+                parts = file.split("-")
+                emotion_code = parts[2]
 
-    return np.array(X), np.array(y)
+                label = emotion_map.get(emotion_code)
+                if label is None:
+                    continue
+
+                path = os.path.join(root, file)
+
+                mfcc = extract_mfcc(path)
+
+                X.append(mfcc)
+                y.append(label)
+
+    X = np.array(X)
+    X = X[..., np.newaxis]  # (samples, 40, 130, 1)
+
+    return X, np.array(y)

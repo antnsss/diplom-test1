@@ -9,7 +9,7 @@ export default function App() {
   const streamRef = useRef(null);
   const chunksRef = useRef([]);
 
-  // 🎤 START RECORDING
+
   const startRecording = async () => {
     setEmotion("");
     setLoading(false);
@@ -77,7 +77,7 @@ export default function App() {
 
   return (
     <div style={styles.container}>
-      <h1>🎤 Voice Emotion Recognition</h1>
+      <h1> Voice Emotion Recognition</h1>
 
       <button
         onClick={recording ? stopRecording : startRecording}

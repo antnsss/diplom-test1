@@ -6,26 +6,37 @@ import pickle
 
 from preprocess import load_data
 
-# 1. завантаження даних
+# 📦 load dataset
 X, y = load_data("../dataset/RAVDESS")
 
-# 2. encode емоцій
+# 🔤 encode labels
 le = LabelEncoder()
-y_encoded = le.fit_transform(y)
+y = le.fit_transform(y)
 
-# 3. split
+# ✂️ split
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y_encoded, test_size=0.2, random_state=42
+    X, y,
+    test_size=0.2,
+    random_state=42
 )
 
-# 4. модель
+# 🧠 CNN model
 model = tf.keras.Sequential([
-    tf.keras.layers.Dense(256, activation="relu", input_shape=(40,)),
-    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Conv2D(32, (3,3), activation="relu", input_shape=(40,130,1)),
+    tf.keras.layers.MaxPooling2D((2,2)),
+
+    tf.keras.layers.Conv2D(64, (3,3), activation="relu"),
+    tf.keras.layers.MaxPooling2D((2,2)),
+
+    tf.keras.layers.Conv2D(128, (3,3), activation="relu"),
+    tf.keras.layers.MaxPooling2D((2,2)),
+
+    tf.keras.layers.Flatten(),
+
     tf.keras.layers.Dense(128, activation="relu"),
     tf.keras.layers.Dropout(0.3),
-    tf.keras.layers.Dense(64, activation="relu"),
-    tf.keras.layers.Dense(8, activation="softmax")
+
+    tf.keras.layers.Dense(len(np.unique(y)), activation="softmax")
 ])
 
 model.compile(
@@ -34,11 +45,11 @@ model.compile(
     metrics=["accuracy"]
 )
 
-# 5. тренування
-model.fit(X_train, y_train, epochs=50, batch_size=32)
+# 🚀 train
+model.fit(X_train, y_train, epochs=30, batch_size=32, validation_data=(X_test, y_test))
 
-# 6. збереження моделі
+# 💾 save model + labels
 model.save("model.h5")
 
-# 7. збереження labels
-pickle.dump(le, open("label_encoder.pkl", "wb"))
+with open("label_encoder.pkl", "wb") as f:
+    pickle.dump(le, f)
